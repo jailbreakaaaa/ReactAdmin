@@ -3,41 +3,24 @@ import {Redirect} from "react-router-dom";
 import { Form, Input, Button } from 'antd';
 import {message} from "antd"
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import {connect} from "react-redux"
 
 import './login.less'
 import logo from '../../assets/imgs/logo.png'
-
-import {reqLogin} from "../../api";
-import mUtils from "../../utils/mUtils";
-import storageUtils from "../../utils/storageUtils";
+import {login} from "../../redux/actions"
 
 /*
 登陆的路由组件
 */
 
-export default class Login extends Component {
+class Login extends Component {
 
     onFinish = (async (value) => {
-        const {username, password} = value;
-        const result = await reqLogin(username, password);//{status: 0, data: user} {status: 1, msg: 'xxx'}
+        const {username, password} = value
 
+        //调用分发异步action的函数 => 发登录的异步请求，有了结果后更新状态
+        this.props.login(username, password)
 
-        if(result.status === 0) {//登陆成功
-            //提示登陆成功
-            message.success('登录成功');
-
-            //保存user
-            const user = result.data;
-            mUtils.user = user; //保存在内存中
-            storageUtils.saveUser(user)//保存到local中
-
-            //跳转到管理界面（不需要回退到登陆界面）
-            this.props.history.replace('/');
-        } else {//登陆失败
-            //提示错误信息
-            message.error(result.msg);
-
-        }
     })
 
     onFinishFailed = (value) => {
@@ -63,12 +46,13 @@ export default class Login extends Component {
 
     render() {
         //如果用户已经登陆，自动跳转到管理界面
-        const user = mUtils.user;
+        const user = this.props.user
         //如果内存没有存储user ==》 当前没有登陆
         if (user && user._id) {
             //自动跳转到登录界面（在render（）中）
-            return <Redirect to = '/'/>
+            return <Redirect to = '/home'/>
         }
+
         return (
             <div className='login'>
                 <header className='login-header'>
@@ -76,6 +60,8 @@ export default class Login extends Component {
                     <h1>React项目:后台管理系统</h1>
                 </header>
                 <section className='login-content'>
+                    <div className={user.errorMsg ? 'error-msg show' :
+                        'error-msg'}>{user.errorMsg}</div>
                     <h2>
                         用户登录
                     </h2>
@@ -141,6 +127,12 @@ export default class Login extends Component {
     }
 }
 
+
+export default connect(
+    state => ({user: state.user}),
+    {login}
+)(Login)
+
 /*
 1.高阶函数
     1)一类特别的函数
@@ -182,3 +174,7 @@ export default class Login extends Component {
 *   await所在函数（最近的）定义的左侧写async
 *
 * */
+
+
+
+//登录用户名或密码错误没有显示，待解决！！！！
